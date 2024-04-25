@@ -63,7 +63,7 @@ void correlate(int ny, int nx, const float *data, float *result) {
                 product += normalized[z + j * nx] * normalized[z + i * nx];
             }
             // insert the final value to the result and reset the product value
-            result[i + j * nx] = (float) product;
+            result[i + j * ny] = (float) product;
             product = 0;
         }
     }
