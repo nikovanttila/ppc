@@ -30,8 +30,18 @@ Result segment(int ny, int nx, const float *data) {
         // outer loop of that tries different wirdths of rectangle
         cout << "Current i: ";
         for (int i = nx; i > 0; --i) {
-        
             cout << i << " ";
+
+            // outer loop of that tries different heights of rectangle
+            for (int j = ny; j > 0; --j) {
+                cout << "\nCurrent j: " << j << "\n";
+                // outer loop of that tries different wirdths of rectangle
+                cout << "Current i: ";
+                for (int i = nx; i > 0; --i) {
+                    cout << i << " ";
+
+                }
+            }
 
         }
     }
