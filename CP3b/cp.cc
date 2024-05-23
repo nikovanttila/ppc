@@ -106,6 +106,8 @@ void correlate(int ny, int nx, const float *data, float *result) {
             float8_t vv111 = f8zero;
             // calculate the dot product between rows for (nab / nb) * 8 elements
             for (int k = 0; k < nx; ++k) {
+                constexpr int PF = 20;
+                __builtin_prefetch(&padded[nx * ja + k + PF]);
                 float8_t a000 = padded[nx * ia + k];
                 float8_t b000 = padded[nx * ja + k];
                 float8_t a100 = swap4(a000);
