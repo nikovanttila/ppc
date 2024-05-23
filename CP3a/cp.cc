@@ -12,9 +12,9 @@ This is the function you need to implement. Quick reference:
 #include <x86intrin.h>
 typedef double double8_t __attribute__ ((vector_size (8 * sizeof(double))));
 
-static inline double8_t swap4(double8_t x) { return _mm512_permute_pd(_mm512_permute_pd(x, 0b000000001), 0b000000001); }
-static inline double8_t swap2(double8_t x) { return _mm512_permute_pd(x, 0b01001110); }
-static inline double8_t swap1(double8_t x) { return _mm512_permute_pd(x, 0b10110001); }
+static inline double8_t swap4(double8_t x) { return _mm512_shuffle_f64x2(x, x, _MM_SHUFFLE(1,0, 3,2)); }
+static inline double8_t swap2(double8_t x) { return _mm512_permutex_pd(x, 0b01001110); }
+static inline double8_t swap1(double8_t x) { return _mm512_permute_pd(x, 0b01010101); }
 
 constexpr double8_t d8zero {
     0, 0, 0, 0, 0, 0, 0, 0
@@ -91,10 +91,13 @@ void correlate(int ny, int nx, const float *data, float *result) {
     }
 
     // calculate the (upper triangle of the) matrix product result = padded * padded^T
+    std::vector<std::tuple<int,int,int>> rows(na * na);
     #pragma omp parallel for schedule(static,1)
     for (int ja = 0; ja < na; ++ja) {
         // calculate the dot product between current rows j and i
         for (int ia = ja; ia < na; ++ia) {
+            int ija = _pdep_u32(ia, 0x55555555) | _pdep_u32(ja, 0xAAAAAAAA);
+            rows[ia * na + ja] = std::make_tuple(ija, ia, ja);
             // initialize variable that stores the sum of results below
             double8_t vv000 = d8zero;
             double8_t vv001 = d8zero;
@@ -106,6 +109,8 @@ void correlate(int ny, int nx, const float *data, float *result) {
             double8_t vv111 = d8zero;
             // calculate the dot product between rows for (nab / nb) * 8 elements
             for (int k = 0; k < nx; ++k) {
+                constexpr int PF = 20;
+                __builtin_prefetch(&padded[nx * ja + k + PF]);
                 double8_t a000 = padded[nx * ia + k];
                 double8_t b000 = padded[nx * ja + k];
                 double8_t a100 = swap4(a000);
@@ -137,4 +142,5 @@ void correlate(int ny, int nx, const float *data, float *result) {
             }
         }
     }
+    std::sort(rows.begin(), rows.end());
 }
